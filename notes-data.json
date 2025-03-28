@@ -1,0 +1,17 @@
+[
+  {
+    "id": 1,
+    "title": "The Future of Full-Stack Development with Java",
+    "content": "Introduction to Full-Stack Development\n\nWhy Choose Java for Full-Stack?\n\nEssential Technologies (Spring Boot, React, Node.js, etc.)\n\nRoadmap to Becoming a Java Full-Stack Developer"
+  },
+  {
+    "id": 2,
+    "title": "The Future of Artificial Intelligence in Healthcare",
+    "content": "Artificial intelligence (AI) is revolutionizing the healthcare industry by enhancing diagnostics, personalizing treatments, and improving patient care. AI-powered systems can analyze medical images, detect anomalies, and predict diseases with high accuracy, often surpassing human capabilities. Machine learning algorithms assist in drug discovery, speeding up research and reducing costs."
+  },
+  {
+    "id": 3,
+    "title": "Chatgpt",
+    "content": "this is a chatgpt"
+  }
+]
