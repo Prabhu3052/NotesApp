@@ -8,8 +8,7 @@ require("dotenv").config();
 const app = express();
 
 // ✅ CORS Configuration
-const allowedOrigins = [process.env.FRONTEND_URL || "*"];
-app.use(cors({ origin: allowedOrigins, credentials: true }));
+app.use(cors({ origin: process.env.FRONTEND_URL || "*", credentials: true }));
 
 app.use(bodyParser.json());
 
