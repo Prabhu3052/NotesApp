@@ -1,82 +1,96 @@
-const express = require('express');
-const cors = require('cors');
-const bodyParser = require('body-parser');
-const fs = require('fs');
-const path = require('path');
+const express = require("express");
+const cors = require("cors");
+const bodyParser = require("body-parser");
+const fs = require("fs").promises; // Use async file handling
+const path = require("path");
+require("dotenv").config(); // Load environment variables
 
 const app = express();
-app.use(cors());
+app.use(cors({ origin: process.env.FRONTEND_URL || "*" })); // Allow frontend access
 app.use(bodyParser.json());
 
-const DATA_FILE = path.join(__dirname, 'notes-data.json');
+const DATA_FILE = path.join(__dirname, "notes-data.json");
 
-// Load notes from file
-function loadNotes() {
+// Load notes from file (Async)
+async function loadNotes() {
   try {
-    const data = fs.readFileSync(DATA_FILE, 'utf8');
+    const data = await fs.readFile(DATA_FILE, "utf8");
     return JSON.parse(data);
   } catch (err) {
-    // If file doesn't exist, return empty array
-    return [];
+    return []; // Return empty array if file doesn't exist
   }
 }
 
-// Save notes to file
-function saveNotes(notes) {
-  fs.writeFileSync(DATA_FILE, JSON.stringify(notes, null, 2), 'utf8');
+// Save notes to file (Async)
+async function saveNotes(notes) {
+  try {
+    await fs.writeFile(DATA_FILE, JSON.stringify(notes, null, 2), "utf8");
+  } catch (err) {
+    console.error("Error saving notes:", err);
+  }
 }
 
-// Initialize with existing notes
-let notes = loadNotes();
-let idCounter = notes.length > 0 ? Math.max(...notes.map(n => n.id)) + 1 : 1;
+// Initialize notes
+let notes = [];
+let idCounter = 1;
+
+async function initializeNotes() {
+  notes = await loadNotes();
+  idCounter = notes.length > 0 ? Math.max(...notes.map((n) => n.id)) + 1 : 1;
+}
+initializeNotes(); // Load existing notes on startup
+
+// Default route to check server status
+app.get("/", (req, res) => {
+  res.send("Notes API is running...");
+});
 
 // Get all notes
-app.get('/notes', (req, res) => {
+app.get("/notes", async (req, res) => {
   res.json(notes);
 });
 
 // Add new note
-app.post('/notes', (req, res) => {
+app.post("/notes", async (req, res) => {
   const { title, content } = req.body;
   if (!title || !content) {
-    return res.status(400).json({ error: 'Title and content are required' });
+    return res.status(400).json({ error: "Title and content are required" });
   }
-  
+
   const newNote = { id: idCounter++, title, content };
   notes.push(newNote);
-  saveNotes(notes); // Save to file
-  
+  await saveNotes(notes); // Save to file
+
   res.status(201).json(newNote);
 });
 
 // Delete note
-app.delete('/notes/:id', (req, res) => {
+app.delete("/notes/:id", async (req, res) => {
   const id = parseInt(req.params.id);
-  notes = notes.filter(note => note.id !== id);
-  saveNotes(notes); // Save to file
-  
+  notes = notes.filter((note) => note.id !== id);
+  await saveNotes(notes); // Save to file
+
   res.status(204).send();
 });
 
 // Update note
-app.put('/notes/:id', (req, res) => {
+app.put("/notes/:id", async (req, res) => {
   const id = parseInt(req.params.id);
   const { title, content } = req.body;
-  
-  const noteIndex = notes.findIndex(n => n.id === id);
+
+  const noteIndex = notes.findIndex((n) => n.id === id);
   if (noteIndex === -1) {
-    return res.status(404).json({ error: 'Note not found' });
+    return res.status(404).json({ error: "Note not found" });
   }
-  
+
   notes[noteIndex] = { ...notes[noteIndex], title, content };
-  saveNotes(notes); // Save to file
-  
+  await saveNotes(notes); // Save to file
+
   res.json(notes[noteIndex]);
 });
 
 // Start server
-const PORT = 5000;
+const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
-  console.log(`Server running on http://localhost:${PORT}`);
-  console.log(`Notes will be saved to ${DATA_FILE}`);
+  console.log(`✅ Server running on port ${PORT}`);
 });
