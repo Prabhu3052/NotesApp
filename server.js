@@ -1,12 +1,16 @@
 const express = require("express");
 const cors = require("cors");
 const bodyParser = require("body-parser");
-const fs = require("fs").promises; // Use async file handling
+const fs = require("fs").promises;
 const path = require("path");
-require("dotenv").config(); // Load environment variables
+require("dotenv").config();
 
 const app = express();
-app.use(cors({ origin: process.env.FRONTEND_URL || "*" })); // Allow frontend access
+
+// ✅ CORS Configuration
+const allowedOrigins = [process.env.FRONTEND_URL || "*"];
+app.use(cors({ origin: allowedOrigins, credentials: true }));
+
 app.use(bodyParser.json());
 
 const DATA_FILE = path.join(__dirname, "notes-data.json");
@@ -17,7 +21,8 @@ async function loadNotes() {
     const data = await fs.readFile(DATA_FILE, "utf8");
     return JSON.parse(data);
   } catch (err) {
-    return []; // Return empty array if file doesn't exist
+    console.error("⚠️ Error reading notes file:", err.message);
+    return []; // Return empty array if file doesn't exist or can't be read
   }
 }
 
@@ -26,7 +31,7 @@ async function saveNotes(notes) {
   try {
     await fs.writeFile(DATA_FILE, JSON.stringify(notes, null, 2), "utf8");
   } catch (err) {
-    console.error("Error saving notes:", err);
+    console.error("❌ Error saving notes:", err.message);
   }
 }
 
@@ -40,57 +45,77 @@ async function initializeNotes() {
 }
 initializeNotes(); // Load existing notes on startup
 
-// Default route to check server status
+// ✅ Default route to check server status
 app.get("/", (req, res) => {
-  res.send("Notes API is running...");
+  res.status(200).send("✅ Notes API is running...");
 });
 
-// Get all notes
+// ✅ Get all notes
 app.get("/notes", async (req, res) => {
-  res.json(notes);
+  try {
+    res.json(notes);
+  } catch (err) {
+    console.error("❌ Error fetching notes:", err.message);
+    res.status(500).json({ error: "Failed to fetch notes" });
+  }
 });
 
-// Add new note
+// ✅ Add new note
 app.post("/notes", async (req, res) => {
-  const { title, content } = req.body;
-  if (!title || !content) {
-    return res.status(400).json({ error: "Title and content are required" });
+  try {
+    const { title, content } = req.body;
+    if (!title || !content) {
+      return res.status(400).json({ error: "Title and content are required" });
+    }
+
+    const newNote = { id: idCounter++, title, content };
+    notes.push(newNote);
+    await saveNotes(notes);
+
+    res.status(201).json(newNote);
+  } catch (err) {
+    console.error("❌ Error adding note:", err.message);
+    res.status(500).json({ error: "Failed to add note" });
   }
-
-  const newNote = { id: idCounter++, title, content };
-  notes.push(newNote);
-  await saveNotes(notes); // Save to file
-
-  res.status(201).json(newNote);
 });
 
-// Delete note
+// ✅ Delete note
 app.delete("/notes/:id", async (req, res) => {
-  const id = parseInt(req.params.id);
-  notes = notes.filter((note) => note.id !== id);
-  await saveNotes(notes); // Save to file
+  try {
+    const id = parseInt(req.params.id);
+    notes = notes.filter((note) => note.id !== id);
+    await saveNotes(notes);
 
-  res.status(204).send();
-});
-
-// Update note
-app.put("/notes/:id", async (req, res) => {
-  const id = parseInt(req.params.id);
-  const { title, content } = req.body;
-
-  const noteIndex = notes.findIndex((n) => n.id === id);
-  if (noteIndex === -1) {
-    return res.status(404).json({ error: "Note not found" });
+    res.status(204).send();
+  } catch (err) {
+    console.error("❌ Error deleting note:", err.message);
+    res.status(500).json({ error: "Failed to delete note" });
   }
-
-  notes[noteIndex] = { ...notes[noteIndex], title, content };
-  await saveNotes(notes); // Save to file
-
-  res.json(notes[noteIndex]);
 });
 
-// Start server
+// ✅ Update note
+app.put("/notes/:id", async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    const { title, content } = req.body;
+
+    const noteIndex = notes.findIndex((n) => n.id === id);
+    if (noteIndex === -1) {
+      return res.status(404).json({ error: "Note not found" });
+    }
+
+    notes[noteIndex] = { ...notes[noteIndex], title, content };
+    await saveNotes(notes);
+
+    res.json(notes[noteIndex]);
+  } catch (err) {
+    console.error("❌ Error updating note:", err.message);
+    res.status(500).json({ error: "Failed to update note" });
+  }
+});
+
+// ✅ Start server
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
-  console.log(`✅ Server running on port ${PORT}`);
+  console.log(`🚀 Server running on port ${PORT}`);
 });
