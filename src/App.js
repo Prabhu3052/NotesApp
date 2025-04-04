@@ -1,6 +1,5 @@
 
 import NotesApp from './NotesApp';
-import { useEffect, useState } from "react";
 import './App.css';
 
 function App() {
