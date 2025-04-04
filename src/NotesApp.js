@@ -2,6 +2,8 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 import "./NotesApp.css";
 
+const API_URL = process.env.REACT_APP_BACKEND_URL || "http://localhost:5000";
+
 const NotesApp = () => {
     const [notes, setNotes] = useState([]);
     const [title, setTitle] = useState("");
@@ -18,7 +20,7 @@ const NotesApp = () => {
         setLoading(true);
         setError("");
         try {
-            const response = await axios.get("http://localhost:5000/notes");
+            const response = await axios.get(`${API_URL}/notes`);
             setNotes(response.data);
         } catch (error) {
             console.error("Error fetching notes:", error);
@@ -49,7 +51,7 @@ const NotesApp = () => {
     };
 
     const addNote = async () => {
-        const response = await axios.post("http://localhost:5000/notes", { 
+        const response = await axios.post(`${API_URL}/notes`, { 
             title: title.trim(), 
             content: content.trim() 
         });
@@ -59,7 +61,7 @@ const NotesApp = () => {
 
     const updateNote = async () => {
         const response = await axios.put(
-            `http://localhost:5000/notes/${editing}`, 
+            `${API_URL}/notes/${editing}`, 
             { 
                 title: title.trim(), 
                 content: content.trim() 
@@ -73,7 +75,7 @@ const NotesApp = () => {
         if (!window.confirm("Are you sure you want to delete this note?")) return;
         
         try {
-            await axios.delete(`http://localhost:5000/notes/${id}`);
+            await axios.delete(`${API_URL}/notes/${id}`);
             setNotes(notes.filter((note) => note.id !== id));
         } catch (error) {
             console.error("Error deleting note:", error);
